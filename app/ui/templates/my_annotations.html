@@ -1,0 +1,135 @@
+{% extends 'base-nav.html' %}
+{% load static %}
+
+{% block head %}
+<title> My Annotations Page </title>
+<script>
+    window.onload = function () {
+        let select = document.getElementById('select');
+        select.addEventListener('change', function () {
+            change_sentences();
+        });
+    };
+
+    function change_sentences() {
+        let type = select.options[select.selectedIndex].text;
+        if (type == "All") type = "all";
+        else if (type == "New") type = "new";
+        else if (type == "Draft") type = "draft";
+        else if (type == "Complete") type = "complete";
+        let url = `/{{root_path}}api/my_annotations/?type=${type}`;
+        $('#annotation-body').find('tr').remove();
+
+        window.results = [];
+
+        $.get(url,
+            function (data) {
+                $('#result_info').remove();
+                let keys = Object.keys(data);
+                if (keys.length == 0) {
+                    $('#annotation-table')[0].hidden = true;
+                    let info = document.createElement('div');
+                    info.id = "result_info";
+                    info.innerHTML = "No result found."
+                    $('#space')[0].append(info);
+                }
+                else {
+                    $('#annotation-table')[0].hidden = false;
+                    for (let i = 0; i < keys.length; i++) {
+                        let one_result = {};
+                        let res_t = data[keys[i]];
+                        console.log(data);
+                        one_result['text'] = res_t['text'];
+                        one_result['sent_id'] = res_t['sent_id'];
+                        one_result['treebank'] = res_t['treebank_title'];
+                        one_result['url'] = res_t['url'];
+                        window.results.push(JSON.parse(JSON.stringify(one_result)));
+                        if (i <= 20) create_row(one_result);
+                    }
+                }
+            }
+        );
+    }
+
+    function create_row(result) {
+        let row = document.createElement("tr");
+        let row_order = $('.tr').length + 1;
+        row.id = row_order;
+        row.className = "border";
+        let fields = ["sent_id", "text", "treebank"];
+        for (let i = 0; i < fields.length; i++) {
+            let data = document.createElement("td");
+            let field = fields[i];
+            data.innerHTML = result[field];
+            if (field != "text") data.style = 'text-align:center';
+            row.append(data);
+        }
+
+        data = document.createElement("td");
+        let a = document.createElement('a');
+        a.href = result['url'];
+        let button = document.createElement("button");
+        let img = $('#pencil-square')[0].cloneNode(true);
+        img.hidden = false;
+        button.setAttribute('data-bs-toggle', 'tooltip');
+        button.setAttribute('data-bs-placement', 'bottom');
+        button.setAttribute('title', 'Annotate the sentence');
+        button.className = "btn btn-light btn-sm border";
+        a.append(img);
+        button.append(a);
+        data.append(button);
+        row.append(data);
+
+        $('#annotation-body')[0].append(row);
+    }
+
+    function page_handle(type) {
+        $('#annotation-body').find('tr').remove();
+        if (type == "next") {
+            window.current_page += 1;
+            if (window.current_page > window.res_size / 20) $('a#next')[0].hidden = true;
+            $('a#previous')[0].hidden = false;
+        }
+        else if (type == "prev") {
+            window.current_page -= 1;
+            if (window.current_page <= window.res_size / 20) $('a#next')[0].hidden = false;
+            if (window.current_page == 1) $('a#previous')[0].hidden = true;
+        }
+        let new_results = window.results.slice(20 * (window.current_page - 1), 20 * (window.current_page - 1) + 20);
+        for (let i = 0; i < new_results.length; i++) create_row(new_results[i]);
+    }
+</script>
+{% endblock %}
+
+{% block body %}
+<div id="username" hidden="true">{{username}}</div>
+<div id="space" class="p-5 border bg-light">
+    <select id="select" class="w-25 form-select">
+        <option disabled selected>Select type</option>
+        <option id="all">All</option>
+        <option id="new">New</option>
+        <option id="draft">Draft</option>
+        <option id="complete">Complete</option>
+    </select><br>
+    <div id="annotations">
+        <table id="annotation-table" class="table table-bordered table-striped" hidden="true">
+            <thead>
+                <tr style="text-align: center;">
+                    <th>sent_id</th>
+                    <th>text</th>
+                    <th>Treebank</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="annotation-body"></tbody>
+        </table>
+    </div>
+    <nav id="pagination" hidden aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item"><a id="previous" hidden class="page-link">Previous</a></li>
+            <li class="page-item"><a id="next" class="page-link">Next</a></li>
+        </ul>
+    </nav>
+</div>
+<img hidden id="pencil-square" src="{% static 'pencil-square.svg' %}">
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base-annotate.html' %}
+{% load static %}
+
+{% block head %}
+    <title> Annotate Page </title>
+    <link rel="stylesheet" href="{% static 'annotate.css' %}">
+    <script type="text/javascript" src="{% static 'annotate.js' %}"></script>
+    
+    <!-- autocomplete -->
+    <script type="text/javascript" src="{% static 'jquery-ui.min.js' %}"></script>
+
+    <!-- conllu.js -->
+    <link rel="stylesheet" href="{% static 'css/jquery-ui-redmond.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style-vis.css' %}">
+    <script type="text/javascript" src="{% static 'lib/ext/head.load.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    {% if message|length != 0 %}
+        {{message}}
+    {% else %}
+        {% if sentence.sent_id|length == 0 %}
+            There is no sentence with that ID.
+        {% else %}
+            <p id="sentence.sent_id" hidden>{{sentence.sent_id}}</p>
+            <p id="sentence.text" hidden>{{sentence.text}}</p>
+            <p id="annotation.cats" hidden>{{cats}}</p>
+            <p id="annotation.notes" hidden>{{annotation.notes}}</p>
+            <p id="annotation.status" hidden>{{annotation.status}}</p>
+            <p id="graph_preference" hidden>{{graph_preference}}</p>
+            <p id="errors" hidden>{{errors}}</p>
+            <p id="error_condition" hidden>{{error_condition}}</p>
+            <p id="current_columns" hidden>{{current_columns}}</p>
+            <p id="root_path" hidden>{{root_path}}</p>
+
+            <div id="buttons"></div>
+            <nav id="table1" class="navbar bg-white sticky-top"></nav>
+            <div id="status"></div>
+            <div id="table2"></div>
+            <div id="bottom-buttons"></div>
+            <div id="graph"></div>
+            <div id="error"></div>
+            {% csrf_token %}
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block conllu-js %}
+<!-- conllu.js -->
+<script type="text/javascript">
+    head.js(
+        // External libraries
+        '{% static 'lib/ext/jquery.min.js' %}',
+        '{% static 'lib/ext/jquery.svg.min.js' %}',
+        '{% static 'lib/ext/jquery.svgdom.min.js' %}',
+        '{% static 'lib/ext/jquery-ui.min.js' %}',
+        '{% static 'lib/ext/waypoints.min.js' %}',
+
+        // brat helper modules
+        '{% static 'lib/brat/configuration.js' %}',
+        '{% static 'lib/brat/util.js' %}',
+        '{% static 'lib/brat/annotation_log.js' %}',
+        '{% static 'lib/ext/webfont.js' %}',
+        // brat modules
+        '{% static 'lib/brat/dispatcher.js' %}',
+        '{% static 'lib/brat/url_monitor.js' %}',
+        '{% static 'lib/brat/visualizer.js' %}',
+
+        // annotation documentation support
+        'http://spyysalo.github.io/annodoc/lib/local/annodoc.js',
+        '{% static 'lib/local/config.js' %}',
+
+        // the conllu.js library itself
+        '{% static 'conllu.js' %}'
+    );
+
+    var webFontURLs = [
+        '{% static 'static/fonts/PT_Sans-Caption-Web-Regular.ttf' %}',
+        '{% static 'static/fonts/Liberation_Sans-Regular.ttf' %}'
+    ];
+</script>
+<!-- conllu.js -->
+
+<!-- treex -->
+<script src="{% static 'jquery-2.1.4.min.js' %}"></script>
+<script src="{% static 'FileSaver.min.js' %}"></script>
+<script src="{% static 'js-treex-view.js' %}"></script>
+<!-- treex -->
+
+<img hidden id="check" src="{% static 'check.svg' %}">
+<img hidden id="arrow-left" src="{% static 'arrow-left.svg' %}">
+<img hidden id="arrow-right" src="{% static 'arrow-right.svg' %}">
+<img hidden id="backspace" src="{% static 'backspace.svg' %}">
+<img hidden id="backspace-fill" src="{% static 'backspace-fill.svg' %}">
+<img hidden id="backspace-reverse" src="{% static 'backspace-reverse.svg' %}">
+<img hidden id="save" src="{% static 'save.svg' %}">
+<img hidden id="exclamation-square" src="{% static 'exclamation-square.svg' %}">
+<img hidden id="exclamation-square-fill" src="{% static 'exclamation-square-fill.svg' %}">
+<img hidden id="arrow-clockwise" src="{% static 'arrow-clockwise.svg' %}">
+<img hidden id="arrow-counterclockwise" src="{% static 'arrow-counterclockwise.svg' %}">
+<img hidden id="x" src="{% static 'x.svg' %}">
+{% endblock %}

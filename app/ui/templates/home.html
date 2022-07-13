@@ -1,0 +1,19 @@
+{% extends 'base-nav.html' %}
+{% load static %}
+
+{% block head %}
+<title> Home Page </title>
+{% endblock %}
+
+{% block body %}
+<div id="space" class="p-5 border bg-light">
+    <h1>BoAT - Boğaziçi University Annotation Tool</h1>
+    <img class="img-fluid rounded" src="{% static 'boat-annotation.png' %}">
+</div>
+<div class="container">
+    <footer class="py-3 my-4">
+        <p class="text-center text-muted">Developed by Boğaziçi University, <a href="https://tabilab.cmpe.boun.edu.tr/">TABILAB</a></p>
+        <p class="text-center text-muted">Source code at <a href="https://github.com/furkanakkurt1335/boat/">GitHub</a></p>
+    </footer>
+</div>
+{% endblock %}

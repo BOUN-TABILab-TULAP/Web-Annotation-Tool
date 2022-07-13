@@ -1,0 +1,38 @@
+{% extends 'base-nav.html' %}
+
+{% block head %}
+<title> Preferences Page </title>
+<script>
+    window.onload = function () {
+        document.getElementById('{{graph_preference}}').style = "color: green;";
+    };
+</script>
+{% endblock %}
+
+{% block body %}
+<div id="space" class="p-5 border bg-light">
+    <form id="preferences" method="post" action="{% url 'preferences' %}">{% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <select class="w-25 form-select" aria-label="Default select example" form="preferences"
+                    name="graph_select">
+                    <option selected>Graph</option>
+                    <option value="spacy" id="spacy">spaCy (horizontal, linear)</option>
+                    <option value="ud" id="ud">UD (vertical)</option>
+                    <option value="conllu.js" id="conllu.js">conllu.js (horizontal, linear)</option>
+                    <option value="none" id="none">None</option>
+                </select>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col">
+                <button class="btn btn-light border-dark" type="submit" value="Save">Save</button>
+            </div>
+        </div>
+    </form>
+    {% if message %}
+    {{message}}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,417 @@
+{% extends 'base-nav.html' %}
+{% load static %}
+
+{% block head %}
+<title> Search Page </title>
+<style>
+    tr.collapse.in {
+        display: table-row;
+    }
+</style>
+<script>
+    {% if queries %}
+
+    function sentence_place(sentence) {
+        for (let i = 0; i < Object.keys(window.sentences).length; i++) {
+            let sentence_t = window.sentences[i];
+            if (sentence_t['text'] == sentence['text'] && sentence_t['sent_id'] == sentence['sent_id'] && sentence_t['treebank_title'] == sentence['treebank_title']) return i;
+        }
+        return -1;
+    }
+
+    window.onload = function () {
+        let queries = JSON.parse($('#queries')[0].innerHTML);
+        let keys = Object.keys(queries);
+        let url = `/{{root_path}}query/?`
+        console.log(url);
+        window.query_info = "";
+        for (let i = 0; i < keys.length; i++) {
+            let type = queries[keys[i]]['type'];
+            let input = queries[keys[i]]['input'];
+            type_url = type.toLowerCase();
+            window.query_info += `${type_url}: ${input}`;
+            url += `${type_url}=${input}`;
+            if (i != keys.length - 1) {
+                url += '&';
+                window.query_info += ", ";
+            }
+        }
+        window.treebank_title = $('#treebank_title')[0].innerHTML;
+        url += `&treebank_title=${window.treebank_title}`;
+
+        window.sentences = [];
+
+        $.get(url,
+            function (data) {
+                let keys = Object.keys(data);
+                let one_result = {};
+                window.res_size = keys.length;
+                $('#info')[0].innerHTML = `${window.res_size} results found.<br>Query was ${window.query_info} in the treebank <i>${window.treebank_title}</i>`;
+                $('#pagination')[0].hidden = false;
+                window.current_page = 1;
+                $('#result-table')[0].hidden = false;
+                for (let i = 0; i < keys.length; i++) {
+                    let res_t = data[keys[i]];
+                    let annotation_t = {};
+                    let annotator_name_t = res_t['annotator_fullname'];
+                    if (annotator_name_t == "") annotation_t['annotator_fullname'] = "Upload version";
+                    else annotation_t['annotator_fullname'] = annotator_name_t;
+                    annotation_t['annotator_username'] = res_t['annotator_username'];
+                    let status_t = res_t['status'];
+                    if (status_t == "0") annotation_t['status'] = 'New';
+                    else if (status_t == "1") annotation_t['status'] = 'New';
+                    else annotation_t['status'] = 'Complete';
+                    let sentence_place_t = sentence_place(res_t);
+                    if (sentence_place_t == -1) {
+                        sentence_place_t = window.sentences.length;
+                        window.sentences[sentence_place_t] = { 'text': res_t['text'], 'sent_id': res_t['sent_id'], 'treebank_title': res_t['treebank_title'], 'order': res_t['order'], annotations: [annotation_t] };
+                    }
+                    else window.sentences[sentence_place_t]['annotations'].push(annotation_t);
+                    if (i <= 20) create_row(window.sentences[sentence_place_t]);
+                }
+            }
+        );
+
+        let prev = $('a#previous')[0];
+        let next = $('a#next')[0];
+        prev.addEventListener('click', function () {
+            page_handle('prev');
+        });
+        next.addEventListener('click', function () {
+            page_handle('next');
+        });
+
+        function page_handle(type) {
+            $('#result-body').find('tr').remove();
+            if (type == "next") {
+                window.current_page += 1;
+                if (window.current_page > window.res_size / 20) $('a#next')[0].hidden = true;
+                $('a#previous')[0].hidden = false;
+            }
+            else if (type == "prev") {
+                window.current_page -= 1;
+                if (window.current_page <= window.res_size / 20) $('a#next')[0].hidden = false;
+                if (window.current_page == 1) $('a#previous')[0].hidden = true;
+            }
+            let new_results = window.sentences.slice(20 * (window.current_page - 1), 20 * (window.current_page - 1) + 20);
+            for (let i = 0; i < new_results.length; i++) create_row(new_results[i]);
+        }
+
+        let button = document.createElement('button');
+        button.type = "button";
+        button.className = "btn btn-light border";
+        button.innerHTML = "Go back to search";
+        button.addEventListener('click', function () {
+            window.location.replace('/search/');
+        });
+        $('#go_back').append(button);
+
+        let info = document.createElement('div');
+        info.id = "info";
+        $('#result').prepend(document.createElement('br'));
+        $('#result').prepend(info);
+
+
+        function get_sorted_cells_keys(dict) {
+            let cells_keys = Object.keys(dict);
+            let new_list = [];
+            for (let i = 1; i < cells_keys.length * 2; i++) {
+                if (cells_keys.indexOf(`${i}-${i + 1}`) != -1) new_list.push(`${i}-${i + 1}`);
+                if (cells_keys.indexOf(`${i}`) != -1) new_list.push(`${i}`);
+            }
+            return new_list;
+        }
+
+        function create_row(result) {
+            let row = document.createElement("tr");
+            row.setAttribute('data-toggle', 'collapse');
+            row.setAttribute('data-target', `.order${result['order']}`);
+            let row_order = $('.tr').length + 1;
+            row.id = row_order;
+            row.className = "border";
+            let annotations = result['annotations'];
+            let fields = ["sent_id", "text"];
+            for (let i = 0; i < fields.length; i++) {
+                let data = document.createElement("td");
+                let field = fields[i];
+                data.innerHTML = result[field];
+                if (field != "text") data.style = 'text-align:center';
+                row.append(data);
+            }
+
+            // buttons
+            div_col = document.createElement('div');
+            div_col.className = 'col-md-auto';
+            let btn_group = document.createElement('div');
+            btn_group.className = 'btn-group';
+            div_col.append(btn_group);
+
+            let data = document.createElement("td");
+            let link = document.createElement('a');
+            link.href = `/{{root_path}}annotate/${result['treebank_title']}/${result['order']}`;
+            let button = document.createElement("button");
+            let img = $('#pencil-square')[0].cloneNode(true);
+            img.hidden = false;
+            button.setAttribute('data-bs-toggle', 'tooltip');
+            button.setAttribute('data-bs-placement', 'bottom');
+            button.setAttribute('title', 'Annotate the sentence');
+            button.className = "btn btn-light btn-sm border";
+            link.append(img);
+            button.append(link);
+            btn_group.append(button);
+
+            button = document.createElement("button");
+            img = $('#eye')[0].cloneNode(true);
+            img.hidden = false;
+            button.setAttribute('data-bs-toggle', 'modal');
+            button.setAttribute('data-bs-target', '#annotationModal');
+            button.setAttribute('data-bs-placement', 'bottom');
+            button.setAttribute('title', 'See the annotations');
+            button.className = "btn btn-light btn-sm border";
+            button.append(img);
+            button.addEventListener('click', function () {
+                document.getElementById('modal-title').innerHTML = `Annotations for ${result['sent_id']}`;
+                let modal_body = document.getElementById('modal-body');
+                $('#modal-sentence').remove();
+                $('table')
+                    .filter(function () {
+                        return this.id.match(/word_lines\d+/);
+                    })
+                    .remove();
+                $('div')
+                    .filter(function () {
+                        return this.id.match(/name\d+/);
+                    })
+                    .remove();
+                let sentence = document.createElement('div');
+                sentence.id = 'modal-sentence';
+                sentence.innerHTML = `<strong>Text</strong>: ${result['text']}`;
+                modal_body.append(sentence);
+
+                window.modal_annotations = [];
+
+                for (let i = 0; i < annotations.length; i++) {
+                    let anno_t = annotations[i];
+                    let name = document.createElement('div');
+                    name.id = `name${i}`;
+                    let fullname = anno_t['annotator_fullname'];
+                    if (fullname.trim() == "") fullname = "Upload version";
+                    name.innerHTML = `<strong>Annotator:</strong> ${fullname}`;
+                    let anno_url = `/{{root_path}}api/annotations/?annotator__username=${anno_t['annotator_username']}&sentence__sent_id=${result['sent_id']}`;
+                    $.get(anno_url, function (data) {
+                        let keys = Object.keys(data);
+                        if (data['count'] != 0) {
+                            let wordlines_url = `/{{root_path}}api/wordlines/?annotation__id=${data['results'][0]['id']}&size=200`;
+                            let table = document.createElement('table');
+                            table.className = 'table';
+                            let tr = document.createElement('tr');
+                            $.get(wordlines_url, function (wl_data) {
+                                modal_body.append(name);
+                                let annotation = {};
+                                let keys = Object.keys(wl_data['results']);
+                                let results_t = wl_data['results'];
+                                for (let i = 0; i < keys.length; i++) {
+                                    let result_t = results_t[keys[i]];
+                                    annotation[result_t['id_f']] = { 'form': result_t['form'], 'lemma': result_t['lemma'], 'upos': result_t['upos'], 'xpos': result_t['xpos'], 'feats': result_t['feats'], 'head': result_t['head'], 'deprel': result_t['deprel'], 'deps': result_t['deps'], 'misc': result_t['misc'] };
+                                }
+                                let cells_keys = get_sorted_cells_keys(annotation);
+                                // Show table
+                                let word_lines = document.createElement("table");
+                                word_lines.id = `word_lines${i}`;
+                                word_lines.className = "table border border-secondary";
+                                let thead = document.createElement("thead");
+                                tbody = document.createElement("tbody");
+                                word_lines.append(thead);
+                                word_lines.append(tbody);
+                                let row = document.createElement("tr");
+                                let columns = ["ID", "FORM", "LEMMA", "UPOS", "XPOS", "FEATS", "HEAD", "DEPREL", "DEPS", "MISC"];
+                                for (let j = 0; j < columns.length; j++) {
+                                    let heading = document.createElement("th");
+                                    heading.innerHTML = columns[j];
+                                    row.append(heading);
+                                }
+                                thead.append(row);
+                                for (let i = 0; i < cells_keys.length; i++) {
+                                    let key_t = cells_keys[i];
+                                    let row = document.createElement("tr");
+                                    let row_t = annotation[key_t];
+                                    for (let j = 0; j < columns.length; j++) {
+                                        let column_t = columns[j].toLowerCase();
+                                        let data = document.createElement("td");
+                                        if (column_t == "id") data.innerHTML = key_t;
+                                        else data.innerHTML = row_t[column_t];
+                                        row.append(data);
+                                    }
+                                    tbody.append(row);
+                                }
+                                modal_body.append(word_lines);
+                            });
+                        }
+                    });
+                }
+            });
+            btn_group.append(button);
+            data.append(btn_group);
+            row.append(data);
+            $('#result-body')[0].append(row);
+        }
+    };
+    {% endif %}
+
+    {% if not queries %}
+    window.onload = function () {
+        create_row();
+    };
+
+    function create_row() {
+        let row_order = $('.row').length + 1;
+        let row = document.createElement('div');
+        row.id = row_order;
+        row.className = "row";
+
+        // type_select
+        let col = document.createElement('div');
+        col.className = "col";
+        let select = document.createElement('select');
+        select.id = "query_type";
+        select.className = "form-select";
+        select.form = "query";
+        select.name = `type_${row_order}`;
+        let option = document.createElement('option');
+        option.disabled = true;
+        option.selected = true;
+        option.innerHTML = "Field";
+        select.append(option);
+        let type_fields = ["sent_id", "text", "FORM", "LEMMA", "UPOS", "XPOS", "FEATS", "HEAD", "DEPREL", "DEPS", "MISC"];
+        for (let i = 0; i < type_fields.length; i++) {
+            option = document.createElement('option');
+            option.innerHTML = type_fields[i];
+            select.append(option);
+        }
+        col.append(select);
+        row.append(col);
+
+        // query_text
+        col = document.createElement('div');
+        col.className = "col";
+        let input = document.createElement('input');
+        input.type = "text";
+        input.className = "form-control";
+        input.placeholder = "Query";
+        input.name = `input_${row_order}`;
+        col.append(input);
+        row.append(col);
+
+        // plus_button
+        // $('#btn-plus').remove();
+        col = document.createElement('div');
+        col.className = "col";
+        col.id = "btn-plus";
+        let button = document.createElement('button');
+        button.type = "button";
+        button.className = "btn btn-light border";
+        button.innerHTML = "+";
+        button.addEventListener('click', function () {
+            button_handle(row_order);
+        });
+        col.append(button);
+        row.append(col);
+        row.append(document.createElement('br'));
+        row.append(document.createElement('br'));
+        $('#queries').append(row);
+    }
+
+    function button_handle(row_order) {
+        let button = $(`div#${row_order}`).find('button')[0];
+        if (button.innerHTML == "-") $(`div#${row_order}`).remove();
+        else {
+            $(`div#${row_order}`).find('button')[0].innerHTML = "-";
+            create_row();
+        }
+    }
+    {% endif %}
+</script>
+{% endblock %}
+
+{% block body %}
+<div id="space" class="p-5 border bg-light">
+    {% if not queries %}
+    <form id="query" method="post" action="{% url 'search' %}" enctype="multipart/form-data">{% csrf_token %}
+        {% if tbs %}
+        <select id="treebank_select" class="w-25 form-select">
+            <option disabled selected>Select treebank</option>
+            {%for tb in tbs%}
+            <option value={{tb}}>{{tb}}</option>
+            {%endfor%}
+        </select><br>
+        <div id="queries">
+
+        </div>
+        <input hidden="true" type="text" id="title" name="title" maxlength="50" required id="id_title">
+        <button class="btn btn-xs btn-light border-secondary" type="submit">Search</button>
+        {% else %}
+        <span>No treebank created as of yet.</span>
+        {% endif %}
+    </form>
+    <script>
+        title_input = document.getElementById('title');
+        treebank_select = document.getElementById('treebank_select');
+        title_input.value = treebank_select.options[treebank_select.selectedIndex].text;
+        treebank_select.addEventListener("change", function () {
+            title_input.value = treebank_select.options[treebank_select.selectedIndex].text;
+        });
+    </script>
+    {% endif %}
+
+
+    {% if queries %}
+    <div id="treebank_title" hidden="true">{{treebank_title}}</div>
+    <div id="queries" hidden="true">{{queries}}</div>
+    <div id="result">
+        <table id="result-table" class="table table-bordered table-striped" hidden="true">
+            <thead>
+                <tr style="text-align: center;">
+                    <th>sent_id</th>
+                    <th>text</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="result-body"></tbody>
+        </table>
+    </div>
+    <nav id="pagination" hidden>
+        <ul class="pagination">
+            <li class="page-item"><a id="previous" hidden class="page-link">Previous</a></li>
+            <li class="page-item"><a id="next" class="page-link">Next</a></li>
+        </ul>
+    </nav>
+    <div id="go_back"></div>
+    {% endif %}
+
+    {% if message %}
+    {{message}}
+    {% endif %}
+</div>
+
+<img hidden id="pencil-square" src="{% static 'pencil-square.svg' %}">
+<img hidden id="eye" src="{% static 'eye.svg' %}">
+
+<!-- Annotation Modal -->
+<div class="modal fade" id="annotationModal" tabindex="-1" aria-labelledby="annotationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

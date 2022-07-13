@@ -1,0 +1,58 @@
+{% extends 'base-nav.html' %}
+
+{% block head %}
+<title> View Treebanks Page </title>
+<script>
+    window.onload = function () {
+        let view_buttons = document.getElementsByClassName('view-sentences');
+        for (let i = 0; i < view_buttons.length; i++) {
+            view_buttons[i].addEventListener("click", function () {
+                let treebank_title = view_buttons[i].id;
+                window.location.replace(`/{{root_path}}view_treebank/${treebank_title}`);
+            });
+        }
+        let dl_buttons = document.getElementsByClassName('download');
+        for (let i = 0; i < dl_buttons.length; i++) {
+            dl_buttons[i].addEventListener("click", function () {
+                let treebank_title = dl_buttons[i].id;
+                $.post("/{{root_path}}download_conllu/",
+                    {
+                        treebank_title: treebank_title
+                    },
+                    function (data) {
+                        let textarea_t = document.createElement('textarea');
+                        textarea_t.innerHTML = data;
+                        var conllu_blob = new Blob([textarea_t.value], { type: "text/plain" });
+                        var url = window.URL.createObjectURL(conllu_blob);
+                        var anchor = document.createElement("a");
+                        anchor.href = url;
+                        anchor.download = `${treebank_title}.conllu`;
+                        anchor.click();
+                        window.URL.revokeObjectURL(url);
+                    });
+            });
+        }
+    };
+</script>
+{% endblock %}
+
+{% block body %}
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Treebanks</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for treebank in treebanks %}
+        <tr>
+            <td>{{treebank}}</td>
+            <td> <button class="btn btn-light btn-outline-secondary view-sentences" id="{{treebank.title}}">View Sentences</button>
+            </td>
+            <td> <button class="btn btn-light btn-outline-secondary download" id="{{treebank.title}}">Download</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
