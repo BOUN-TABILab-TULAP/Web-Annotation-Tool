@@ -6,9 +6,10 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light">
+    <h1>Upload a File</h1>
     <form method="post" action="{% url 'upload_file' %}" enctype="multipart/form-data">{% csrf_token %}
         {% if treebanks|length == 0 %}
-        You need to create a treebank first. Go <a href="{% url 'create_treebank' %}">here</a>.
+        <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
         {% else %}
         Choose a treebank to upload to:
         <select class="w-50 form-select" id="treebank_select">

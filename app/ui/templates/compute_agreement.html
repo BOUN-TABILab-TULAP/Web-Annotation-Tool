@@ -9,41 +9,46 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light">
+    <h1>Compute Agreement</h1>
+    {% if tbs %}
     <form method="post" action="{% url 'compute_agreement' %}" enctype="multipart/form-data">{% csrf_token %}
         <table class="table">
-        <tbody>
-            <tr>
-                <td>
-                    <select id="treebank_select" class="w-50 form-select">
-                        <option disabled selected>Select treebank</option>
-                        {%for tb in tbs%}
+            <tbody>
+                <tr>
+                    <td>
+                        <select id="treebank_select" class="w-50 form-select">
+                            <option disabled selected>Select treebank</option>
+                            {%for tb in tbs%}
                             <option value={{tb}}>{{tb}}</option>
-                        {%endfor%}
-                    </select>
-                </td>
-                <td>
-                    <input hidden="true" type="text" id="title" name="title" maxlength="50" required id="id_title">
-                    <button type="submit" class="btn btn-xs btn-light border-secondary"> Compute </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+                            {%endfor%}
+                        </select>
+                    </td>
+                    <td>
+                        <input hidden="true" type="text" id="title" name="title" maxlength="50" required id="id_title">
+                        <button type="submit" class="btn btn-xs btn-light border-secondary"> Compute </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-    <script>
-        title_input = document.getElementById('title');
-        treebank_select = document.getElementById('treebank_select');
-        title_input.value = treebank_select.options[treebank_select.selectedIndex].text;
-        treebank_select.addEventListener("change", function () {
+        <script>
+            title_input = document.getElementById('title');
+            treebank_select = document.getElementById('treebank_select');
             title_input.value = treebank_select.options[treebank_select.selectedIndex].text;
-        });
-    </script>
+            treebank_select.addEventListener("change", function () {
+                title_input.value = treebank_select.options[treebank_select.selectedIndex].text;
+            });
+        </script>
 
-    <div id="result">
-        {%if score%}
+        <div id="result">
+            {% if score %}
             Agreement score for the treebank <i>{{tb_name}}</i>: {{score}}
-        {%elif score == 0%}
+            {% elif score == 0 %}
             Not enough data to compute the score for the treebank <i>{{tb_name}}</i>.
-        {%endif%}
-    </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
+        {% endif %}
 </div>
 {% endblock %}

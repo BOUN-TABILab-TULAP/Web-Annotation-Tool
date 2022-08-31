@@ -6,6 +6,7 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light">
+    <h1>Create a Treebank</h1>
     <form method="post" action="{% url 'create_treebank' %}" enctype="multipart/form-data">{% csrf_token %}
         <input type="text" name="title" class="w-25 form-control" maxlength="30" required id="title"
             placeholder="Treebank Name, Unique"><br>

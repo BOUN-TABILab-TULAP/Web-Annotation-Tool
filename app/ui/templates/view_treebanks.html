@@ -1,4 +1,5 @@
 {% extends 'base-nav.html' %}
+{% load static %}
 
 {% block head %}
 <title> View Treebanks Page </title>
@@ -37,22 +38,36 @@
 {% endblock %}
 
 {% block body %}
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">Treebanks</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for treebank in treebanks %}
-        <tr>
-            <td>{{treebank}}</td>
-            <td> <button class="btn btn-light btn-outline-secondary view-sentences" id="{{treebank.title}}">View Sentences</button>
-            </td>
-            <td> <button class="btn btn-light btn-outline-secondary download" id="{{treebank.title}}">Download</button>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div id="space" class="p-5 border bg-light">
+
+    <table class="table">
+        <h1>View Treebanks</h1>
+        {% if tbs %}
+        <thead>
+            <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Number of sentences</th>
+                <th scope="col">View link</th>
+                <th scope="col">Download link</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tb in tbs %}
+            <tr>
+                <td>{{tb.title}}</td>
+                <td>{{tb.size}} sentences</td>
+                <td> <button class="btn btn-light btn-outline-secondary view-sentences" id="{{tb.title}}"><img id="eye"
+                            src="{% static 'eye.svg' %}"></button>
+                </td>
+                <td> <button class="btn btn-light btn-outline-secondary download" id="{{tb.title}}"><img id="save"
+                            src="{% static 'save.svg' %}"></button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% else %}
+        <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
+        {% endif %}
+    </table>
+</div>
 {% endblock %}

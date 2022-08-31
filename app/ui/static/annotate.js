@@ -1,6 +1,9 @@
 
 // On document load
 window.onload = function () {
+    // paste as plain text
+    document.addEventListener('paste', function(e) { e.preventDefault(); document.activeElement.innerHTML = e.clipboardData.getData('text/plain'); });
+
     window.CSRF_TOKEN = document.getElementsByName('csrfmiddlewaretoken')[0];
     window.sent_id = document.getElementById('sentence.sent_id').innerHTML;
     window.text = document.getElementById('sentence.text').innerHTML;
@@ -325,34 +328,36 @@ document.onkeyup = function (e) {
     }
     else if ((e.key == "ArrowUp" || e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight") && e.shiftKey) {
         if (!document.getElementById('word_lines').contains(document.activeElement)) return;
-        let matches = document.activeElement.id.match(/(.+) (.+)/);
-        if (matches.length == 3) {
-            let cells_keys = get_sorted_cells_keys();
-            let row_id = cells_keys.indexOf(matches[1]);
-            let column_order = current_columns.indexOf(matches[2]);
+	if (e.altKey) {
+		if (e.key == "ArrowUp") {
+		    button_handle("do", document.activeElement.id.split(' ')[0], "up");
+		}
+		else if (e.key == "ArrowDown") {
+		    button_handle("do", document.activeElement.id.split(' ')[0], "down");
+		}
+	}
+	else {
+		let matches = document.activeElement.id.match(/(.+) (.+)/);
+		if (matches.length == 3) {
+		    let cells_keys = get_sorted_cells_keys();
+		    let row_id = cells_keys.indexOf(matches[1]);
+		    let column_order = current_columns.indexOf(matches[2]);
 
-            let form_count = document.getElementById("word_lines").getElementsByTagName("tr").length - 1;
-            if (e.key == "ArrowUp" && row_id != 0) {
-                document.getElementById(`${cells_keys[row_id - 1]} ${matches[2]}`).focus();
-            }
-            else if (e.key == "ArrowDown" && row_id != form_count - 1) {
-                document.getElementById(`${cells_keys[row_id + 1]} ${matches[2]}`).focus();
-            }
-            else if (e.key == "ArrowRight" && column_order != current_columns.length - 1) {
-                document.getElementById(`${matches[1]} ${current_columns[column_order + 1]}`).focus();
-            }
-            else if (e.key == "ArrowLeft" && column_order != 0) {
-                document.getElementById(`${matches[1]} ${current_columns[column_order - 1]}`).focus();
-            }
-        }
-    }
-    else if (e.shiftKey && e.altKey) {
-        if (e.key == "ArrowUp") {
-            button_handle("do", document.activeElement.id.split(' ')[0], "up");
-        }
-        else if (e.key == "ArrowDown") {
-            button_handle("do", document.activeElement.id.split(' ')[0], "down");
-        }
+		    let form_count = document.getElementById("word_lines").getElementsByTagName("tr").length - 1;
+		    if (e.key == "ArrowUp" && row_id != 0) {
+			document.getElementById(`${cells_keys[row_id - 1]} ${matches[2]}`).focus();
+		    }
+		    else if (e.key == "ArrowDown" && row_id != form_count - 1) {
+			document.getElementById(`${cells_keys[row_id + 1]} ${matches[2]}`).focus();
+		    }
+		    else if (e.key == "ArrowRight" && column_order != current_columns.length - 1) {
+			document.getElementById(`${matches[1]} ${current_columns[column_order + 1]}`).focus();
+		    }
+		    else if (e.key == "ArrowLeft" && column_order != 0) {
+			document.getElementById(`${matches[1]} ${current_columns[column_order - 1]}`).focus();
+		    }
+		}
+	}
     }
 };
 

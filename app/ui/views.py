@@ -270,6 +270,12 @@ def login(request):
     return render(request, 'login.html', {'root_path': ROOT_PATH})
 
 
+def about(request):
+    if request.user == 'AnonymousUser':
+        return redirect('login')
+    else:
+        return render(request, 'about.html')
+
 def index(request):
     if request.user == 'AnonymousUser':
         return redirect('login')
@@ -388,7 +394,22 @@ def test(request):
 @login_required
 def view_treebanks(request):
     treebanks = Treebank.objects.all()
-    context = {'treebanks': treebanks, 'root_path': ROOT_PATH}
+    tb_title_l = []
+    tb_d = {}
+    for tb in treebanks:
+        tb_title_l.append(tb.title)
+        tb_d[tb.title] = tb
+    tb_title_l.sort()
+    tb_ct_d = []
+    for tb in tb_title_l:
+        sent_l = Sentence.objects.filter(treebank=tb_d[tb])
+        progress = 0
+        for sent_t in sent_l:
+            if len(Annotation.objects.filter(sentence=sent_t, status=2)) != 0: progress += 1
+        if len(sent_l) == 0: progress = 0.0
+        else: progress = round(progress / len(sent_l) * 100, 2)
+        tb_ct_d.append({'title': tb, 'size': len(sent_l), 'progress': progress})
+    context = {'tbs': tb_ct_d, 'root_path': ROOT_PATH}
     return render(request, 'view_treebanks.html', context)
 
 
@@ -404,7 +425,7 @@ def view_treebank(request, treebank):
 
 def replace_path(current_path, type, number=None):
     path_split = current_path.split('/')
-    new_path = '/'.join(path_split[:3]) + '/'
+    new_path = '/'.join(path_split[:-1]) + '/'
     current_number = int(path_split[-1])
     number_to_go = current_number
     if type == 'previous':

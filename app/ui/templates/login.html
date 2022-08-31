@@ -7,19 +7,19 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light" align="center">
-    <h1>BoAT v2</h1>
+    <h1>BoAT - Boğaziçi University Annotation Tool</h1>
     <form method="post" action="{% url 'login' %}" class="form-horizontal" role="form">{% csrf_token %}
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="text" class="form-control" id="floatingInput" name="username" placeholder="Username"
                 value="{{data.username}}"><br>
             <label for="floatingInput">Username</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="password" class="form-control" id="floatingPassword" name="password"
                 placeholder="Password"><br>
             <label for="floatingPassword">Password</label>
         </div>
-        <button class="w-25 btn btn-lg btn-light border-dark" type="submit" value="Log in">Log in</button>
+        <button class="btn btn-lg btn-light border-dark" type="submit" value="Log in">Log in</button>
     </form>
     <br> Need to register?
     <a class="btn btn-light border-dark" href={% url 'register' %} role="button">Register</a>
@@ -35,11 +35,11 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel">BoAT v2</h5>
+                    <h5 class="modal-title" id="infoModalLabel">BoAT - Boğaziçi University Annotation Tool</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Info about BoAT v2.
+                    Info about Boğaziçi University Annotation Tool.
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

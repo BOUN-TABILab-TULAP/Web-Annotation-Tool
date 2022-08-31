@@ -138,7 +138,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-ROOT_PATH = '/'
+ROOT_PATH = 'boat/'
 LOGIN_URL = f'/{ROOT_PATH}accounts/login/'
 
 # Static files (CSS, JavaScript, Images)

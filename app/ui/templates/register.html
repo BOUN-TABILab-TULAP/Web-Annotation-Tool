@@ -17,35 +17,35 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light" align="center">
-    <h1>BoAT v2</h1>
+    <h1>BoAT - Boğaziçi University Annotation Tool</h1>
     <form method="post" action="{% url 'register' %}">{% csrf_token %}
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="text" class="form-control" id="floatingInput" name="username" placeholder="Username" value="{{data.username}}"><br>
             <label for="floatingInput">Username</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="text" class="form-control" id="floatingInput" name="first_name" placeholder="First Name" value="{{data.first_name}}"><br>
             <label for="floatingInput">First Name</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="text" class="form-control" id="floatingInput" name="last_name" placeholder="Last Name" value="{{data.last_name}}"><br>
             <label for="floatingInput">Last Name</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="email" class="form-control" id="floatingInput" name="email" placeholder="Email Address" value="{{data.email}}"><br>
             <label for="floatingInput">Email Address</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="password" class="form-control" id="floatingPassword" name="password1"
                 placeholder="Password"><br>
             <label for="floatingPassword">Password</label>
         </div>
-        <div class="w-25 form-floating">
+        <div class="form-floating">
             <input type="password" class="form-control" id="floatingPassword" name="password2"
                 placeholder="Password again"><br>
             <label for="floatingPassword">Password again</label>
         </div>
-        <button class="w-25 btn btn-lg btn-light border-dark" type="submit" value="Register">Register</button>
+        <button class="btn btn-lg btn-light border-dark" type="submit" value="Register">Register</button>
     </form>
     <br> Have an account already?
     <a class="btn btn-light border-dark" href={% url 'login' %} role="button">Log in</a>
@@ -61,11 +61,11 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel">BoAT v2</h5>
+                    <h5 class="modal-title" id="infoModalLabel">BoAT - Boğaziçi University Annotation Tool</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Info about BoAT v2.
+                    Info about BoAT - Boğaziçi University Annotation Tool.
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

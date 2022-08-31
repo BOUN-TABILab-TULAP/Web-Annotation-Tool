@@ -335,6 +335,7 @@
 
 {% block body %}
 <div id="space" class="p-5 border bg-light">
+    <h1>Search</h1>
     {% if not queries %}
     <form id="query" method="post" action="{% url 'search' %}" enctype="multipart/form-data">{% csrf_token %}
         {% if tbs %}
@@ -350,7 +351,7 @@
         <input hidden="true" type="text" id="title" name="title" maxlength="50" required id="id_title">
         <button class="btn btn-xs btn-light border-secondary" type="submit">Search</button>
         {% else %}
-        <span>No treebank created as of yet.</span>
+        <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
         {% endif %}
     </form>
     <script>
