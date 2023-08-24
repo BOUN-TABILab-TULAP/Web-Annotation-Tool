@@ -133,7 +133,6 @@ USE_TZ = True
 ROOT_PATH = ''
 STATIC_URL = f'{ROOT_PATH}static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-CSRF_TRUSTED_ORIGINS = ['http://79.123.177.252', 'http://localhost:8000']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
