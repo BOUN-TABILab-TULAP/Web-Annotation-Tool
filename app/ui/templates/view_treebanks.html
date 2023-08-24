@@ -1,5 +1,6 @@
 {% extends 'base-nav.html' %}
 {% load static %}
+{% load bootstrap_icons %}
 
 {% block head %}
 <title> View Treebanks Page </title>
@@ -12,10 +13,10 @@
                 window.location.replace(`/{{root_path}}view_treebank/${treebank_title}`);
             });
         }
-        let dl_buttons = document.getElementsByClassName('download');
-        for (let i = 0; i < dl_buttons.length; i++) {
-            dl_buttons[i].addEventListener("click", function () {
-                let treebank_title = dl_buttons[i].id;
+        let download_buttons = document.getElementsByClassName('download');
+        for (let i = 0; i < download_buttons.length; i++) {
+            download_buttons[i].addEventListener("click", function () {
+                let treebank_title = download_buttons[i].id;
                 $.post("/{{root_path}}download_conllu/",
                     {
                         treebank_title: treebank_title
@@ -33,6 +34,37 @@
                     });
             });
         }
+        let delete_buttons = document.getElementsByClassName('delete');
+        for (let i = 0; i < delete_buttons.length; i++) {
+            delete_buttons[i].addEventListener("click", function () {
+                let treebank_title = delete_buttons[i].id;
+                document.getElementById('delete-modal-body').innerHTML = `Do you want to delete the treebank with the name <i>${treebank_title}</i> with all its annotations?`;
+                document.getElementById('modalDeleteButton').addEventListener('click', function() {
+                    $.post("/{{root_path}}delete_treebank/",
+                        {
+                            treebank_title: treebank_title
+                        }, function() {
+                            window.location.replace('/{{root_path}}view_treebanks');
+                        });
+                });
+            });
+        }
+        let add_buttons = document.getElementsByClassName('add-sentence');
+        for (let i = 0; i < add_buttons.length; i++) {
+            add_buttons[i].addEventListener('click', function () {
+                let treebank_title = add_buttons[i].id;
+                document.getElementById('add-message').innerHTML = 'Add a sentence to the treebank <i>' + treebank_title + '</i>:';
+                document.getElementById('modalAddButton').addEventListener('click', function() {
+                    $.post("/{{root_path}}add_sentence/",
+                        {
+                            title: treebank_title,
+                            sentence: document.getElementById('sentence').value
+                        }, function() {
+                            window.location.replace('/{{root_path}}view_treebanks');
+                        });
+                });
+            });
+        }
     };
 </script>
 {% endblock %}
@@ -43,31 +75,99 @@
     <table class="table">
         <h1>View Treebanks</h1>
         {% if tbs %}
-        <thead>
-            <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Number of sentences</th>
-                <th scope="col">View link</th>
-                <th scope="col">Download link</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tb in tbs %}
-            <tr>
-                <td>{{tb.title}}</td>
-                <td>{{tb.size}} sentences</td>
-                <td> <button class="btn btn-light btn-outline-secondary view-sentences" id="{{tb.title}}"><img id="eye"
-                            src="{% static 'eye.svg' %}"></button>
-                </td>
-                <td> <button class="btn btn-light btn-outline-secondary download" id="{{tb.title}}"><img id="save"
-                            src="{% static 'save.svg' %}"></button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+            <thead>
+                <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Number of sentences</th>
+                    <th scope="col">Progress</th>
+                    <th scope="col">Add</th>
+                    <th scope="col">View</th>
+                    <th scope="col">Download</th>
+                    <th scope="col">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tb in tbs %}
+                <tr id="{{tb.title}}">
+                    <td>{{tb.title}}</td>
+                    <td>
+                        {% if tb.size == 0 %}
+                            None
+                        {% elif tb.size == 1 %}
+                            1 sentence
+                        {% else %}
+                            {{tb.size}} sentences
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{tb.progress}}%;" aria-valuenow="{{tb.progress}}" aria-valuemin="0" aria-valuemax="100">{{tb.progress}}%</div>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-light btn-outline-secondary add-sentence" id="{{tb.title}}" data-bs-toggle="modal" data-bs-target="#addModal" data-bs-placement="bottom" title="Add a sentence">
+                            {% bs_icon 'plus' color='black' %}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-light btn-outline-secondary view-sentences" id="{{tb.title}}">
+                            {% bs_icon 'eye' color='black' %}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-light btn-outline-secondary download" id="{{tb.title}}">
+                            {% bs_icon 'save' color='black' %}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-light btn-outline-secondary delete" id="{{tb.title}}" data-bs-toggle="modal" data-bs-target="#deleteModal" data-bs-placement="bottom" title="Delete the treebank">
+                            {% bs_icon 'trash' color='black' %}
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         {% else %}
-        <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
+            <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
         {% endif %}
     </table>
 </div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Delete the treebank</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="delete-modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modalDeleteButton" data-bs-dismiss="modal">Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Add a sentence</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="add-modal-body">
+                <div class="add-message" id="add-message"></div>
+                <textarea class="form-control" id="sentence" rows="1"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modalAddButton" data-bs-dismiss="modal">Add</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

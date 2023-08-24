@@ -1,5 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import User
+import datetime
+
+def user_directory_path(_, filename):
+    filename_parts = filename.split('.')
+    if len(filename_parts) > 1: extension = '.' + filename_parts[-1]; filename = filename_parts[:-1]
+    else: extension = ''
+    return 'treebank_uploads/{0}_{1}{2}'.format(filename, datetime.datetime.now().strftime('%Y%m%d%H%M%S'), extension)
+
+class TreebankFile(models.Model):
+    file = models.FileField(upload_to=user_directory_path)
 
 class ExtendUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE,)

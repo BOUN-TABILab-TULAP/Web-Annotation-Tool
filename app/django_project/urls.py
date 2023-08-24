@@ -34,6 +34,7 @@ urlpatterns = [
     path(f'{ROOT_PATH}query/', views.query, name='query'),
     path(f'{ROOT_PATH}api/my_annotations/', views.my_annotations, name='my_annos'),
     path(f'{ROOT_PATH}api/get_treebank/', views.get_treebank, name='get_treebank'),
+    path(f'{ROOT_PATH}api/get_annotations/', views.get_annotations, name='get_annotations'),
     path(f'{ROOT_PATH}api/', include(router.urls)),
     path(f'{ROOT_PATH}api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

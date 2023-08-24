@@ -20,4 +20,3 @@ See [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) for instal
 2. Go to the newly created directory (if using zip the directory should be 'Web-Annotation-Tool-main'. If using Git, the directory should be 'Web-Annotation-Tool').
 3. Build the tool with the command `docker compose up --build -d`
 4. Open [localhost:8000](http://localhost:8000) on your browser to start the web annotation tool.
-

@@ -11,6 +11,11 @@ from rest_framework.response import Response
 
 from rest_framework.pagination import PageNumberPagination
 
+from django_project.settings import ROOT_PATH
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view()
 def get_treebank(request):
@@ -23,6 +28,25 @@ def get_treebank(request):
             'sent_id': sentence.sent_id, 'text': sentence.text, 'order': sentence.order}
     return Response(result)
 
+@api_view()
+def get_annotations(request):
+    q = request.GET
+    sent_id = q['sent_id']
+    sentence = Sentence.objects.get(sent_id=sent_id)
+    result = {}
+    annotations = Annotation.objects.filter(sentence=sentence)
+    for annotation in annotations:
+        user_t = User.objects.get(id=annotation.annotator_id)
+        word_lines = Word_Line.objects.filter(annotation=annotation)
+        word_lines_d = {}
+        for word_line in word_lines:
+            word_lines_d[word_line.id_f] = {'form': word_line.form, 'lemma': word_line.lemma, 'upos': word_line.upos, 'xpos': word_line.xpos,
+                                            'feats': word_line.feats, 'head': word_line.head, 'deprel': word_line.deprel, 'deps': word_line.deps, 'misc': word_line.misc}
+        result[len(result.keys())] = {'sent_id': sentence.sent_id, 'text': sentence.text, 'order': sentence.order,
+                                        'annotator': annotation.annotator.username, 'status': annotation.status, 'word_lines': word_lines_d, 'annotator_fullname': ' '.join(
+            [user_t.first_name, user_t.last_name])}
+    return Response(result)
+
 
 @api_view()
 def my_annotations(request):
@@ -32,14 +56,14 @@ def my_annotations(request):
     if q['type'] == 'all':
         annotations = Annotation.objects.filter(annotator=request.user)
     else:
-        type_d = {"new": 0, "draft": 2, "complete": 1}
+        type_d = {"new": 0, "draft": 1, "complete": 2}
         annotations = Annotation.objects.filter(
             annotator=request.user, status=type_d[q['type']])
     result = {}
     for ann_t in annotations:
         sen_t = Sentence.objects.get(id=ann_t.sentence.id)
         tb_t = Treebank.objects.get(id=sen_t.treebank_id)
-        url_t = f'/annotate/{tb_t.title}/{sen_t.order}'
+        url_t = f'/{ROOT_PATH}annotate/{tb_t.title}/{sen_t.order}'
         d_t = {'sent_id': sen_t.sent_id, 'text': sen_t.text,
                'treebank_title': tb_t.title, 'url': url_t}
         result[len(result.keys())] = d_t
@@ -49,6 +73,7 @@ def my_annotations(request):
 @api_view()
 def query(request):
     q = request.GET
+    logger.info(str(q))
     wordlines = Word_Line.objects.all()
     if 'form' in q:
         wordlines = wordlines.filter(form__contains=q['form'])

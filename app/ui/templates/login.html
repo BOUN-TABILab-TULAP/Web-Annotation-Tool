@@ -10,16 +10,16 @@
     <h1>BoAT - Boğaziçi University Annotation Tool</h1>
     <form method="post" action="{% url 'login' %}" class="form-horizontal" role="form">{% csrf_token %}
         <div class="form-floating">
-            <input type="text" class="form-control" id="floatingInput" name="username" placeholder="Username"
+            <input type="text" class="form-control" id="usernameInput" name="username" placeholder="Username"
                 value="{{data.username}}"><br>
             <label for="floatingInput">Username</label>
         </div>
         <div class="form-floating">
-            <input type="password" class="form-control" id="floatingPassword" name="password"
+            <input type="password" class="form-control" id="passwordInput" name="password"
                 placeholder="Password"><br>
             <label for="floatingPassword">Password</label>
         </div>
-        <button class="btn btn-lg btn-light border-dark" type="submit" value="Log in">Log in</button>
+        <button class="btn btn-lg btn-light border-dark" type="submit" id="loginButton" value="Log in">Log in</button>
     </form>
     <br> Need to register?
     <a class="btn btn-light border-dark" href={% url 'register' %} role="button">Register</a>
@@ -35,11 +35,11 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel">BoAT - Boğaziçi University Annotation Tool</h5>
+                    <h5 class="modal-title" id="infoModalLabel">Boğaziçi University Annotation Tool (BoAT)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Info about Boğaziçi University Annotation Tool.
+                    The web-based Boğaziçi University Annotation Tool (BoAT) supports grammar annotation, especially suitable for morphologically rich languages (MRLs). It is useful for creating treebanks and conforms to Universal Dependencies (UD) framework.
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

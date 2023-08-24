@@ -9,11 +9,12 @@ window.onload = function () {
     window.text = document.getElementById('sentence.text').innerHTML;
     window.cells = JSON.parse(document.getElementById('annotation.cats').innerHTML);
     window.notes = document.getElementById('annotation.notes').innerHTML;
-    window.status = parseInt(document.getElementById('annotation.status').innerHTML);
-    window.status_d = { 0: "None", 1: "Draft", 2: "Complete" };
+    window.annotation_status = parseInt(document.getElementById('annotation.status').innerHTML);
+    window.status_d = { 0: "New", 1: "Draft", 2: "Complete" };
     window.errors = document.getElementById('errors').innerHTML;
     window.graph_preference = parseInt(document.getElementById('graph_preference').innerHTML);
-    window.graph_d = { 0: "None", 1: "conllu.js", 2: "treex", 3: "spacy" };
+    // window.graph_d = { 0: "None", 1: "conllu.js", 2: "treex", 3: "spacy" };
+    window.graph_d = { 0: "None", 1: "conllu.js" };
     window.root_path = document.getElementById('root_path').innerHTML;
     let error_condition_t = document.getElementById('error_condition').innerHTML;
     if (error_condition_t == "1") window.error_condition = 1;
@@ -37,8 +38,10 @@ window.onload = function () {
             feats = feats.split('|');
             for (let j = 0; j < feats.length; j++) {
                 let matches = feats[j].match(/(.+)=(.+)/);
-                let column = matches[1].toLowerCase();
-                window.cells[cells_keys[i]][column] = matches[2];
+                if (matches != null) {
+                    let column = matches[1].toLowerCase();
+                    window.cells[cells_keys[i]][column] = matches[2];
+                }
             }
         }
     }
@@ -119,7 +122,7 @@ function post_to_save(type, number) {
     input = document.createElement('input');
     input.type = 'hidden';
     input.name = "status";
-    input.value = window.status;
+    input.value = window.annotation_status;
     form.append(input);
     document.body.append(form);
 
@@ -166,6 +169,8 @@ function get_sorted_cells_keys() {
     return new_list;
 }
 
+const split_editable_list = ["form", "misc"];
+
 function button_handle(type, number, way) {
     if (["previous", "next", "save"].includes(type)) {
         post_to_save(type);
@@ -207,6 +212,17 @@ function button_handle(type, number, way) {
                 if (input_number.includes('-')) return;
                 let first_num = parseInt(input_number);
                 if (first_num == NaN) return;
+                for (let i = 0; i <= row_place; i++) {
+                    let key_t = cells_keys[i];
+                    let key_num = parseInt(key_t);
+                    if (!key_t.includes('-')) {
+                        let head_t = window.cells[`${key_num}`]['head'];
+                        if (head_t != '_') {
+                            let head_num = parseInt(head_t);
+                            if (head_num > first_num) window.cells[`${key_num}`]['head'] = `${head_num + 1}`;
+                        }
+                    }
+                }
                 for (let i = cells_keys.length - 1; i > row_place; i--) {
                     let key_t = cells_keys[i];
                     let key_num = parseInt(key_t);
@@ -214,9 +230,22 @@ function button_handle(type, number, way) {
                         window.cells[`${key_num + 1}-${key_num + 2}`] = { ...window.cells[key_t] };
                         delete window.cells[key_t];
                     }
-                    else window.cells[`${key_num + 1}`] = { ...window.cells[key_t] };
+                    else {
+                        window.cells[`${key_num + 1}`] = { ...window.cells[key_t] };
+                        let head_t = window.cells[`${key_num + 1}`]['head'];
+                        if (head_t != '_') {
+                            let head_num = parseInt(head_t);
+                            if (head_num >= first_num) window.cells[`${key_num + 1}`]['head'] = `${head_num + 1}`;
+                        }
+                    }
                 }
                 window.cells[`${first_num}-${first_num + 1}`] = { ...window.cells[input_number] };
+                new_row_keys = Object.keys(window.cells[`${first_num}-${first_num + 1}`]);
+                for (let i = 0; i < new_row_keys.length; i++) {
+                    if (!split_editable_list.includes(new_row_keys[i])) {
+                        window.cells[`${first_num}-${first_num + 1}`][new_row_keys[i]] = '_';
+                    }
+                }
                 window.cells[`${first_num + 1}`] = { ...window.cells[input_number] };
             }
             else if (selected == "Remove row") {
@@ -530,8 +559,8 @@ function init_page() {
     input_group.className = 'input-group';
     div_col.append(input_group);
 
-    text = document.createElement('span');
-    text.innerHTML = "Status:&nbsp;";
+    let text = document.createElement('span');
+    text.innerHTML = "Status:";
     input_group.append(text);
 
     // status_select
@@ -545,9 +574,9 @@ function init_page() {
             if (options[i].selected) options[i].classList.add("text-success");
             else options[i].classList.remove("text-success");
         }
-        if (selected == window.status_d[0]) window.status = 0;
-        else if (selected == window.status_d[1]) window.status = 1;
-        else if (selected == window.status_d[2]) window.status = 2;
+        if (selected == window.status_d[0]) window.annotation_status = 0;
+        else if (selected == window.status_d[1]) window.annotation_status = 1;
+        else if (selected == window.status_d[2]) window.annotation_status = 2;
     });
     options = [];
     let status_keys = Object.keys(window.status_d);
@@ -557,7 +586,7 @@ function init_page() {
     for (let i = 0; i < options.length; i++) {
         option = document.createElement("option");
         option.innerHTML = options[i];
-        if (window.status == i) {
+        if (window.annotation_status == i) {
             option.selected = true;
             option.classList.add("text-success");
         }
@@ -684,6 +713,21 @@ function init_page() {
     div_col.append(button);
     div_row.append(div_col);
 
+    // info
+    div_col = document.createElement('div');
+    div_col.className = 'col';
+    button = document.createElement("button");
+    img = $('#info')[0].cloneNode(true);
+    img.hidden = false;
+    button.setAttribute('data-bs-toggle', 'modal');
+    button.setAttribute('data-bs-target', '#infoModal');
+    button.setAttribute('data-bs-placement', 'bottom');
+    button.setAttribute('title', 'Info');
+    button.className = "btn btn-light btn-sm border";
+    button.append(img);
+    div_col.append(button);
+    div_row.append(div_col);
+
     div_cont.append(div_row);
     $('div#buttons')[0].append(div_cont);
     div_bottom_cont.append(div_bottom_row);
@@ -770,6 +814,7 @@ function inject_sentence() {
         if (feats != '_') {
             for (let j = 0; j < feats.length; j++) {
                 let matches = feats[j].match(/(.+)=(.+)/);
+                if (matches == null) continue;
                 let column = matches[1].toLowerCase();
                 cells[cells_keys[i]][column] = matches[2];
             }
@@ -783,7 +828,9 @@ function inject_sentence() {
             else if (cells[row_t][column_t] == undefined) data.innerHTML = "_";
             else data.innerHTML = cells[row_t][column_t];
             data.id = `${row_t} ${column_t}`;
-            if (column_t != "id") data.contentEditable = true;
+            data.contentEditable = true;
+            if (column_t == "id") data.contentEditable = false;
+            else if (row_t.indexOf('-') != -1 && !split_editable_list.includes(column_t)) data.contentEditable = false;
             data.addEventListener("focus", (event) => {
                 window.last_focus = [row_t, column_t];
                 window.last_focus_value = event.target.innerHTML;
@@ -889,8 +936,7 @@ function display_errors() {
     $('#error_div').remove();
     $('#error_header').remove();
     $('#error_body').remove();
-
-    $.post(`/${root_path}error/`,
+    $.post(`/${window.root_path}error/`,
         {
             cells: JSON.stringify(window.cells),
             sent_id: window.sent_id,
@@ -914,9 +960,10 @@ function display_errors() {
     error_body.className = "card-body";
     error_div.append(error_body);
     let errors = window.errors.split('\n');
-    if (errors[0] == "*** PASSED ***") {
+    if (errors[0] == "") {
         error_div.classList.add("border-success");
         error_header.classList.add("border-success");
+        errors[0] = 'Without error!';
     }
     else {
         error_div.classList.add("border-danger");
@@ -960,12 +1007,23 @@ function cell_change(key, column, cell) {
     window.cells[key][column] = cell;
     if (column == "feats") {
         let feats = cell.split('|');
+        let feat_d = {};
         for (let j = 0; j < feats.length; j++) {
             let matches = feats[j].match(/(.+)=(.+)/);
             if (matches) {
                 let column_t = matches[1].toLowerCase();
                 window.cells[key][column_t] = matches[2];
-                if (current_columns.indexOf(column_t) != -1) document.getElementById(`${key} ${column_t}`).innerHTML = matches[2];
+                feat_d[column_t] = matches[2];
+            }
+        }
+        let feat_keys = Object.keys(feat_d);
+        for (let j = 0; j < current_columns.length; j++) {
+            let column_t = current_columns[j].toLowerCase();
+            if (feat_keys.includes(column_t)) {
+                document.getElementById(`${key} ${column_t}`).innerHTML = feat_d[column_t];
+            }
+            else if (!cats_low.includes(column_t)) {
+                document.getElementById(`${key} ${column_t}`).innerHTML = "_";
             }
         }
         feats_order(key);
@@ -982,12 +1040,14 @@ function cell_change(key, column, cell) {
         }
         current_feats[features[features_low.indexOf(column)]] = cell;
         let feats_l = Object.keys(current_feats);
-        for (let j = 0; j < feats_l.length; j++) {
-            new_feats += `${feats_l[j]}=${current_feats[feats_l[j]]}`;
-            if (j != feats_l.length - 1) new_feats += "|";
-        }
+        let new_feats_l = [];
+        for (let j = 0; j < feats_l.length; j++)
+            if (current_feats[feats_l[j]] != "_") new_feats_l.push(feats_l[j]);
+        new_feats = new_feats_l.sort().map(function (x) { return `${x}=${current_feats[x]}`; }).join('|');
+        if (new_feats == "") new_feats = "_";
         document.getElementById(`${key} feats`).innerHTML = new_feats;
         window.cells[key]['feats'] = new_feats;
-        feats_order(key);
     }
+    create_graph();
+    display_errors();
 }

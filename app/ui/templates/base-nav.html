@@ -11,7 +11,7 @@
     <script type="text/javascript" src="{% static 'jquery-3.6.0.js' %}"></script>
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 
     {% block head %}{% endblock %}
 </head>
@@ -20,7 +20,7 @@
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-                <a class="navbar-brand" href={% url 'profile' %}>{{user}}</a>
+                <a class="navbar-brand" id="profile" href={% url 'profile' %}>{{user}}</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -28,42 +28,43 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href={% url 'home' %}> Home </a>
+                            <a class="nav-link active" aria-current="page" id="home" href={% url 'home' %}> Home </a>
                         </li>
                         <div class="dropdown">
-                            <button class="btn dropdown-toggle" type="button" id="dropdownMenuButton1"
+                            <button class="btn dropdown-toggle" type="button" id="treebanksDropdownMenuButton"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                                 Treebanks
                             </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                                <li><a class="dropdown-item" href={% url 'create_treebank' %}>Create</a></li>
-                                <li><a class="dropdown-item" href={% url 'view_treebanks' %}>View</a></li>
-                                <li><a class="dropdown-item" href={% url 'upload_file' %}>Upload File</a></li>
+                            <ul class="dropdown-menu" aria-labelledby="treebanksDropdownMenuButton">
+                                <li><a class="dropdown-item" id="create_treebank" href={% url 'create_treebank' %}>Create</a></li>
+                                <li><a class="dropdown-item" id="view_treebanks" href={% url 'view_treebanks' %}>View</a></li>
+                                <li><a class="dropdown-item" id="upload_file" href={% url 'upload_file' %}>Upload File</a></li>
+                                <li><a class="dropdown-item" id="add_sentence" href={% url 'add_sentence' %}>Add Sentence</a></li>
                             </ul>
                         </div>
                         <div class="dropdown">
-                            <button class="btn dropdown-toggle" type="button" id="dropdownMenuButton2"
+                            <button class="btn dropdown-toggle" type="button" id="annotationsDropdownMenuButton"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                                 Annotations
                             </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                <li><a class="dropdown-item" href={% url 'compute_agreement' %}> Compute Agreement </a>
-                                <li><a class="dropdown-item" href={% url 'my_annotations' %}> My Annotations </a></li>
-                                <li><a class="dropdown-item" href={% url 'search' %}> Search </a>
+                            <ul class="dropdown-menu" aria-labelledby="annotationsDropdownMenuButton">
+                                <li><a class="dropdown-item" id="compute_agreement" href={% url 'compute_agreement' %}> Compute Agreement </a>
+                                <li><a class="dropdown-item" id="my_annotations" href={% url 'my_annotations' %}> My Annotations </a></li>
+                                <li><a class="dropdown-item" id="search" href={% url 'search' %}> Search </a>
                                 </li>
                             </ul>
                         </div>
                         <li class="nav-item">
-                            <a class="nav-link" href={% url 'about' %}> About </a>
+                            <a class="nav-link" id="about" href={% url 'about' %}> About </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href={% url 'help' %}> Help </a>
+                            <a class="nav-link" id="help" href={% url 'help' %}> Help </a>
                         </li>
                         <!-- <li class="nav-item">
                             <a class="nav-link" href={% url 'preferences' %}>Preferences</a>
                         </li> -->
                         <li class="nav-item">
-                            <a class="nav-link" href={% url 'logout' %}> Log out </a>
+                            <a class="nav-link" id="logout" href={% url 'logout' %}> Log out </a>
                         </li>
                     </ul>
                 </div>
@@ -74,7 +75,7 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script type="text/javascript" src="{% static 'bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 </body>
 

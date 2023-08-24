@@ -295,8 +295,18 @@ def validate_cols_level1(cols):
                 testid = 'repeated-whitespace'
                 testmessage = 'Two or more consecutive whitespace characters not allowed in column %s.' % (COLNAMES[col_idx])
                 warn(testmessage, testclass, testlevel=testlevel, testid=testid)
-    # These columns must not have whitespace
-    for col_idx in (ID,UPOS,XPOS,FEATS,HEAD,DEPREL,DEPS):
+    # Multi-word tokens may have whitespaces in MISC but not in FORM or LEMMA.
+    # If it contains a space, it does not make sense to treat it as a MWT.
+    if is_multiword_token(cols):
+        for col_idx in (FORM, LEMMA):
+            if col_idx >= len(cols):
+                break # this has been already reported in trees()
+            if whitespace_re.match(cols[col_idx]):
+                testid = 'invalid-whitespace-mwt'
+                testmessage = "White space not allowed in multi-word token '%s'. If it contains a space, it is not one surface token." % (cols[col_idx])
+                warn(testmessage, testclass, testlevel=testlevel, testid=testid)
+    # These columns must not have whitespace.
+    for col_idx in (ID, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS):
         if col_idx >= len(cols):
             break # this has been already reported in trees()
         if whitespace_re.match(cols[col_idx]):
@@ -420,9 +430,8 @@ def validate_newlines(inp):
         testlevel = 1
         testclass = 'Format'
         testid = 'non-unix-newline'
-        # below commented out by salihfurqan
-        # testmessage = 'Only the unix-style LF line terminator is allowed.'
-        # warn(testmessage, testclass, testlevel=testlevel, testid=testid)
+        testmessage = 'Only the unix-style LF line terminator is allowed.'
+        warn(testmessage, testclass, testlevel=testlevel, testid=testid)
 
 
 
@@ -477,6 +486,9 @@ def validate_text_meta(comments, tree):
     # Remember if SpaceAfter=No applies to the last word of the sentence.
     # This is not prohibited in general but it is prohibited at the end of a paragraph or document.
     global spaceafterno_in_effect
+    # In trees(), sentence_line was already moved to the first token/node line
+    # after the sentence comment lines. While this is useful in most validation
+    # functions, it complicates things here where we also work with the comments.
     global sentence_line
     testlevel = 2
     testclass = 'Metadata'
@@ -522,8 +534,12 @@ def validate_text_meta(comments, tree):
         # Validate the text against the SpaceAfter attribute in MISC.
         skip_words = set()
         mismatch_reported = 0 # do not report multiple mismatches in the same sentence; they usually have the same cause
-        iline = 0
+        # We will sum sentence_line + iline, and sentence_line already points at
+        # the first token/node line after the sentence comments. Hence iline shall
+        # be 0 once we enter the cycle.
+        iline = -1
         for cols in tree:
+            iline += 1
             if MISC >= len(cols):
                 # This error has been reported elsewhere but we cannot check MISC now.
                 continue
@@ -561,6 +577,8 @@ def validate_text_meta(comments, tree):
                 if not mismatch_reported:
                     testid = 'text-form-mismatch'
                     testmessage = "Mismatch between the text attribute and the FORM field. Form[%s] is '%s' but text is '%s...'" % (cols[ID], cols[FORM], stext[:len(cols[FORM])+20])
+                    if stext[0].isspace():
+                        testmessage += " (perhaps extra SpaceAfter=No at previous token?)"
                     warn(testmessage, testclass, testlevel=testlevel, testid=testid, nodelineno=sentence_line+iline)
                     mismatch_reported=1
             else:
@@ -574,7 +592,6 @@ def validate_text_meta(comments, tree):
                         testmessage = "'SpaceAfter=No' is missing in the MISC field of node #%s because the text is '%s'." % (cols[ID], shorten(cols[FORM]+stext))
                         warn(testmessage, testclass, testlevel=testlevel, testid=testid, nodelineno=sentence_line+iline)
                     stext=stext.lstrip()
-            iline += 1
         if stext:
             testid = 'text-extra-chars'
             testmessage = "Extra characters at the end of the text attribute, not accounted for in the FORM fields: '%s'" % stext
@@ -743,53 +760,63 @@ def validate_features(cols, tag_sets, args):
                 # Level 2 tests character properties and canonical order but not that the f-v pair is known.
                 # Level 4 also checks whether the feature value is on the list.
                 # If only universal feature-value pairs are allowed, test on level 4 with lang='ud'.
-                if args.level > 3 and featset is not None:
+                if args.level > 3:
                     testlevel = 4
-                    # The featset is no longer a simple set of feature-value pairs.
-                    # It is a complex database that we read from feats.json.
-                    if attr not in featset:
-                        testid = 'feature-unknown'
-                        testmessage = "Feature %s is not documented for language [%s]." % (attr, lang)
-                        if not altlang and len(warn_on_undoc_feats) > 0:
-                            # If some features were excluded because they are not documented,
-                            # tell the user when the first unknown feature is encountered in the data.
-                            # Then erase this (long) introductory message and do not repeat it with
-                            # other instances of unknown features.
-                            testmessage += "\n\n" + warn_on_undoc_feats
-                            warn_on_undoc_feats = ''
-                        warn(testmessage, testclass, testlevel=testlevel, testid=testid)
-                    else:
-                        lfrecord = featset[attr]
-                        if lfrecord['permitted']==0:
-                            testid = 'feature-not-permitted'
-                            testmessage = "Feature %s is not permitted in language [%s]." % (attr, lang)
+                    # In case of code switching, the current token may not be in the default language
+                    # and then its features are checked against a different feature set. An exception
+                    # is the feature Foreign, which always relates to the default language of the
+                    # corpus (but Foreign=Yes should probably be allowed for all UPOS categories in
+                    # all languages).
+                    effective_featset = featset
+                    effective_lang = lang
+                    if attr == 'Foreign':
+                        # Revert to the default.
+                        effective_featset = tag_sets[FEATS]
+                        effective_lang = args.lang
+                    if effective_featset is not None:
+                        if attr not in effective_featset:
+                            testid = 'feature-unknown'
+                            testmessage = "Feature %s is not documented for language [%s]." % (attr, effective_lang)
                             if not altlang and len(warn_on_undoc_feats) > 0:
+                                # If some features were excluded because they are not documented,
+                                # tell the user when the first unknown feature is encountered in the data.
+                                # Then erase this (long) introductory message and do not repeat it with
+                                # other instances of unknown features.
                                 testmessage += "\n\n" + warn_on_undoc_feats
                                 warn_on_undoc_feats = ''
                             warn(testmessage, testclass, testlevel=testlevel, testid=testid)
                         else:
-                            values = lfrecord['uvalues'] + lfrecord['lvalues'] + lfrecord['unused_uvalues'] + lfrecord['unused_lvalues']
-                            if not v in values:
-                                testid = 'feature-value-unknown'
-                                testmessage = "Value %s is not documented for feature %s in language [%s]." % (v, attr, lang)
+                            lfrecord = effective_featset[attr]
+                            if lfrecord['permitted']==0:
+                                testid = 'feature-not-permitted'
+                                testmessage = "Feature %s is not permitted in language [%s]." % (attr, effective_lang)
                                 if not altlang and len(warn_on_undoc_feats) > 0:
                                     testmessage += "\n\n" + warn_on_undoc_feats
                                     warn_on_undoc_feats = ''
                                 warn(testmessage, testclass, testlevel=testlevel, testid=testid)
-                            elif not cols[UPOS] in lfrecord['byupos']:
-                                testid = 'feature-upos-not-permitted'
-                                testmessage = "Feature %s is not permitted with UPOS %s in language [%s]." % (attr, cols[UPOS], lang)
-                                if not altlang and len(warn_on_undoc_feats) > 0:
-                                    testmessage += "\n\n" + warn_on_undoc_feats
-                                    warn_on_undoc_feats = ''
-                                warn(testmessage, testclass, testlevel=testlevel, testid=testid)
-                            elif not v in lfrecord['byupos'][cols[UPOS]] or lfrecord['byupos'][cols[UPOS]][v]==0:
-                                testid = 'feature-value-upos-not-permitted'
-                                testmessage = "Value %s of feature %s is not permitted with UPOS %s in language [%s]." % (v, attr, cols[UPOS], lang)
-                                if not altlang and len(warn_on_undoc_feats) > 0:
-                                    testmessage += "\n\n" + warn_on_undoc_feats
-                                    warn_on_undoc_feats = ''
-                                warn(testmessage, testclass, testlevel=testlevel, testid=testid)
+                            else:
+                                values = lfrecord['uvalues'] + lfrecord['lvalues'] + lfrecord['unused_uvalues'] + lfrecord['unused_lvalues']
+                                if not v in values:
+                                    testid = 'feature-value-unknown'
+                                    testmessage = "Value %s is not documented for feature %s in language [%s]." % (v, attr, effective_lang)
+                                    if not altlang and len(warn_on_undoc_feats) > 0:
+                                        testmessage += "\n\n" + warn_on_undoc_feats
+                                        warn_on_undoc_feats = ''
+                                    warn(testmessage, testclass, testlevel=testlevel, testid=testid)
+                                elif not cols[UPOS] in lfrecord['byupos']:
+                                    testid = 'feature-upos-not-permitted'
+                                    testmessage = "Feature %s is not permitted with UPOS %s in language [%s]." % (attr, cols[UPOS], effective_lang)
+                                    if not altlang and len(warn_on_undoc_feats) > 0:
+                                        testmessage += "\n\n" + warn_on_undoc_feats
+                                        warn_on_undoc_feats = ''
+                                    warn(testmessage, testclass, testlevel=testlevel, testid=testid)
+                                elif not v in lfrecord['byupos'][cols[UPOS]] or lfrecord['byupos'][cols[UPOS]][v]==0:
+                                    testid = 'feature-value-upos-not-permitted'
+                                    testmessage = "Value %s of feature %s is not permitted with UPOS %s in language [%s]." % (v, attr, cols[UPOS], effective_lang)
+                                    if not altlang and len(warn_on_undoc_feats) > 0:
+                                        testmessage += "\n\n" + warn_on_undoc_feats
+                                        warn_on_undoc_feats = ''
+                                    warn(testmessage, testclass, testlevel=testlevel, testid=testid)
     if len(attr_set) != len(feat_list):
         testlevel = 2
         testid = 'repeated-feature'
@@ -1452,20 +1479,46 @@ def validate_single_subject(id, tree):
     requirement may be weaker: it could have an overt subject if it is
     correferential with a particular argument of the matrix verb. Hence we do
     not check zero subjects of xcomp dependents at present.
-    Furthermore, in some situations we must allow two subjects (but not three or more).
-    If a clause acts as a nonverbal predicate of another clause, and if there is
-    no copula, then we must attach two subjects to the predicate of the inner
-    clause: one is the predicate of the inner clause, the other is the predicate
-    of the outer clause. This could in theory be recursive but in practice it isn't.
+    Furthermore, in some situations we must allow multiple subjects. If a clause
+    acts as a nonverbal predicate of another clause, then we must attach two
+    subjects to the predicate of the inner clause: one is the predicate of the
+    inner clause, the other is the predicate of the outer clause. This could in
+    theory be recursive but in practice it isn't. As of UD 2.10, an amendment
+    of the guidelines says that the inner predicate of the predicate clause
+    should govern both subjects even if there is a copula (previously such
+    cases were an exception from the UD approach that copulas should not be
+    heads); however, the outer subjects should be attached as [nc]subj:outer.
+    See https://universaldependencies.org/changes.html#multiple-subjects.
     See also issue 34 (https://github.com/UniversalDependencies/tools/issues/34).
+    Strictly speaking, :outer is optional because it is a subtype, and some
+    treebanks may want to avoid it. For example, in Coptic Scriptorium, there
+    is only one occurrence in dev, one in test, and none in train, so it would
+    be impossible to train a parser that gets it right. For that reason, it is
+    possible to replace the :outer subtype with Subject=Outer in MISC. The MISC
+    attribute is just a directive for the validator and no parser is expected
+    to predict it.
     """
-    subjects = sorted([x for x in tree['children'][id] if re.search(r"subj", lspec2ud(tree['nodes'][x][DEPREL]))])
-    if len(subjects) > 2:
-        # We test for more than 2, but in the error message we still say more than 1, so that we do not have to explain the exceptions.
+
+    def is_inner_subject(node):
+        """
+        Takes a node, i.e., tree['nodes'][x]. Tells whether the node's deprel is
+        nsubj or csubj without the :outer subtype. Alternatively, instead of the
+        :outer subtype, the node could have Subject=Outer in MISC.
+        """
+        if not re.search(r'subj', lspec2ud(node[DEPREL])):
+            return False
+        if re.match(r'^[nc]subj:outer$', node[DEPREL]):
+            return False
+        if len([y for y in node[MISC].split('|') if y == 'Subject=Outer']) > 0:
+            return False
+        return True
+
+    subjects = sorted([x for x in tree['children'][id] if is_inner_subject(tree['nodes'][x])])
+    if len(subjects) > 1:
         testlevel = 3
         testclass = 'Syntax'
         testid = 'too-many-subjects'
-        testmessage = "Node has more than one subject: %s" % str(subjects)
+        testmessage = "Node has multiple subjects not subtyped as ':outer': %s. Outer subjects are allowed if a clause acts as the predicate of another clause." % str(subjects)
         warn(testmessage, testclass, testlevel=testlevel, testid=testid, nodeid=id, nodelineno=tree['linenos'][id])
 
 def validate_orphan(id, tree):
@@ -1844,11 +1897,15 @@ def validate_whitespace(cols, tag_sets):
     """
     testlevel = 4
     testclass = 'Format'
-    for col_idx in (FORM,LEMMA):
+    # We already verified that a multiword token does not contain a space (see validate_cols_level1()).
+    if is_multiword_token(cols):
+        return
+    for col_idx in (FORM, LEMMA):
         if col_idx >= len(cols):
             break # this has been already reported in trees()
         if whitespace_re.match(cols[col_idx]) is not None:
-            # Whitespace found - does it pass?
+            # Whitespace found.
+            # Does the FORM/LEMMA pass one of the regular expressions that define permitted words with spaces in this language?
             for regex in tag_sets[TOKENSWSPACE]:
                 if regex.fullmatch(cols[col_idx]):
                     break
@@ -2589,8 +2646,8 @@ def validate(inp, out, args, tag_sets, known_sent_ids):
     global tree_counter
     for comments, sentence in trees(inp, tag_sets, args):
         tree_counter += 1
-        #the individual lines have been validated already in trees()
-        #here go tests which are done on the whole tree
+        # The individual lines were validated already in trees().
+        # What follows is tests that need to see the whole tree.
         idseqok = validate_ID_sequence(sentence) # level 1
         validate_token_ranges(sentence) # level 1
         if args.level > 1:
@@ -2657,34 +2714,33 @@ def load_feat_set(filename_langspec, lcode):
     # it to the first error message about an unknown feature. Note that this
     # global information pertains to the default validation language and it
     # should not be used with code-switched segments in alternative languages.
-    # below commented out by salihfurqan
-    # msg = ''
-    # if not lcode in featdata:
-    #     msg += "No feature-value pairs have been permitted for language [%s].\n" % (lcode)
-    #     msg += "They can be permitted at the address below (if the language has an ISO code and is registered with UD):\n"
-    #     msg += "https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_feature.pl\n"
-    #     warn_on_undoc_feats = msg
-    # else:
-    #     # Identify feature values that are permitted in the current language.
-    #     for f in featset:
-    #         for e in featset[f]['errors']:
-    #             msg += "ERROR in _%s/feat/%s.md: %s\n" % (lcode, f, e)
-    #     res = set()
-    #     for f in featset:
-    #         if featset[f]['permitted'] > 0:
-    #             for v in featset[f]['uvalues']:
-    #                 res.add(f+'='+v)
-    #             for v in featset[f]['lvalues']:
-    #                 res.add(f+'='+v)
-    #     sorted_documented_features = sorted(res)
-    #     msg += "The following %d feature values are currently permitted in language [%s]:\n" % (len(sorted_documented_features), lcode)
-    #     msg += ', '.join(sorted_documented_features) + "\n"
-    #     msg += "If a language needs a feature that is not documented in the universal guidelines, the feature must\n"
-    #     msg += "have a language-specific documentation page in a prescribed format.\n"
-    #     msg += "See https://universaldependencies.org/contributing_language_specific.html for further guidelines.\n"
-    #     msg += "All features including universal must be specifically turned on for each language in which they are used.\n"
-    #     msg += "See https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_feature.pl for details.\n"
-    #     warn_on_undoc_feats = msg
+    msg = ''
+    if not lcode in featdata:
+        msg += "No feature-value pairs have been permitted for language [%s].\n" % (lcode)
+        msg += "They can be permitted at the address below (if the language has an ISO code and is registered with UD):\n"
+        msg += "https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_feature.pl\n"
+        warn_on_undoc_feats = msg
+    else:
+        # Identify feature values that are permitted in the current language.
+        for f in featset:
+            for e in featset[f]['errors']:
+                msg += "ERROR in _%s/feat/%s.md: %s\n" % (lcode, f, e)
+        res = set()
+        for f in featset:
+            if featset[f]['permitted'] > 0:
+                for v in featset[f]['uvalues']:
+                    res.add(f+'='+v)
+                for v in featset[f]['lvalues']:
+                    res.add(f+'='+v)
+        sorted_documented_features = sorted(res)
+        msg += "The following %d feature values are currently permitted in language [%s]:\n" % (len(sorted_documented_features), lcode)
+        msg += ', '.join(sorted_documented_features) + "\n"
+        msg += "If a language needs a feature that is not documented in the universal guidelines, the feature must\n"
+        msg += "have a language-specific documentation page in a prescribed format.\n"
+        msg += "See https://universaldependencies.org/contributing_language_specific.html for further guidelines.\n"
+        msg += "All features including universal must be specifically turned on for each language in which they are used.\n"
+        msg += "See https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_feature.pl for details.\n"
+        warn_on_undoc_feats = msg
     return featset
 
 def get_featdata_for_language(lcode):
@@ -2717,35 +2773,34 @@ def load_deprel_set(filename_langspec, lcode):
     # it to the first error message about an unknown relation. Note that this
     # global information pertains to the default validation language and it
     # should not be used with code-switched segments in alternative languages.
-    # below commented out by salihfurqan
-    # msg = ''
-    # if len(deprelset) == 0:
-    #     msg += "No dependency relation types have been permitted for language [%s].\n" % (lcode)
-    #     msg += "They can be permitted at the address below (if the language has an ISO code and is registered with UD):\n"
-    #     msg += "https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_deprel.pl\n"
-    # else:
-    #     # Identify dependency relations that are permitted in the current language.
-    #     # If there are errors in documentation, identify the erroneous doc file.
-    #     # Note that depreldata[lcode] may not exist even though we have a non-empty
-    #     # set of relations, if lcode is 'ud'.
-    #     if lcode in depreldata:
-    #         for r in depreldata[lcode]:
-    #             file = re.sub(r':', r'-', r)
-    #             if file == 'aux':
-    #                 file = 'aux_'
-    #             for e in depreldata[lcode][r]['errors']:
-    #                 msg += "ERROR in _%s/dep/%s.md: %s\n" % (lcode, file, e)
-    #     sorted_documented_relations = sorted(deprelset)
-    #     msg += "The following %d relations are currently permitted in language [%s]:\n" % (len(sorted_documented_relations), lcode)
-    #     msg += ', '.join(sorted_documented_relations) + "\n"
-    #     msg += "If a language needs a relation subtype that is not documented in the universal guidelines, the relation\n"
-    #     msg += "must have a language-specific documentation page in a prescribed format.\n"
-    #     msg += "See https://universaldependencies.org/contributing_language_specific.html for further guidelines.\n"
-    #     msg += "Documented dependency relations can be specifically turned on/off for each language in which they are used.\n"
-    #     msg += "See https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_deprel.pl for details.\n"
-    #     # Save the message in a global variable.
-    #     # We will add it to the first error message about an unknown feature in the data.
-    # warn_on_undoc_deps = msg
+    msg = ''
+    if len(deprelset) == 0:
+        msg += "No dependency relation types have been permitted for language [%s].\n" % (lcode)
+        msg += "They can be permitted at the address below (if the language has an ISO code and is registered with UD):\n"
+        msg += "https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_deprel.pl\n"
+    else:
+        # Identify dependency relations that are permitted in the current language.
+        # If there are errors in documentation, identify the erroneous doc file.
+        # Note that depreldata[lcode] may not exist even though we have a non-empty
+        # set of relations, if lcode is 'ud'.
+        if lcode in depreldata:
+            for r in depreldata[lcode]:
+                file = re.sub(r':', r'-', r)
+                if file == 'aux':
+                    file = 'aux_'
+                for e in depreldata[lcode][r]['errors']:
+                    msg += "ERROR in _%s/dep/%s.md: %s\n" % (lcode, file, e)
+        sorted_documented_relations = sorted(deprelset)
+        msg += "The following %d relations are currently permitted in language [%s]:\n" % (len(sorted_documented_relations), lcode)
+        msg += ', '.join(sorted_documented_relations) + "\n"
+        msg += "If a language needs a relation subtype that is not documented in the universal guidelines, the relation\n"
+        msg += "must have a language-specific documentation page in a prescribed format.\n"
+        msg += "See https://universaldependencies.org/contributing_language_specific.html for further guidelines.\n"
+        msg += "Documented dependency relations can be specifically turned on/off for each language in which they are used.\n"
+        msg += "See https://quest.ms.mff.cuni.cz/udvalidator/cgi-bin/unidep/langspec/specify_deprel.pl for details.\n"
+        # Save the message in a global variable.
+        # We will add it to the first error message about an unknown feature in the data.
+    warn_on_undoc_deps = msg
     return deprelset
 
 def get_depreldata_for_language(lcode):
@@ -2940,6 +2995,7 @@ if __name__=="__main__":
     list_group = opt_parser.add_argument_group("Tag sets", "Options relevant to checking tag sets.")
     list_group.add_argument("--lang", action="store", required=True, default=None, help="Which langauge are we checking? If you specify this (as a two-letter code), the tags will be checked using the language-specific files in the data/ directory of the validator.")
     list_group.add_argument("--level", action="store", type=int, default=5, dest="level", help="Level 1: Test only CoNLL-U backbone. Level 2: UD format. Level 3: UD contents. Level 4: Language-specific labels. Level 5: Language-specific contents.")
+
     tree_group = opt_parser.add_argument_group("Tree constraints", "Options for checking the validity of the tree.")
     tree_group.add_argument("--multiple-roots", action="store_false", default=True, dest="single_root", help="Allow trees with several root words (single root required by default).")
 
@@ -3037,9 +3093,8 @@ if __name__=="__main__":
             print('*** PASSED ***', file=sys.stderr)
         sys.exit(0)
     else:
-        # below commented out by salihfurqan
-        # if not args.quiet:
-        #     print('*** FAILED *** with %d errors' % nerror, file=sys.stderr)
+        if not args.quiet:
+            print('*** FAILED *** with %d errors' % nerror, file=sys.stderr)
         for f_name in sorted(warn_on_missing_files):
             filepath = os.path.join(THISDIR, 'data', f_name+'.'+args.lang)
             if not os.path.exists(filepath):

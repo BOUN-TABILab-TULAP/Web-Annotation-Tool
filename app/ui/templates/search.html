@@ -102,7 +102,7 @@
         button.className = "btn btn-light border";
         button.innerHTML = "Go back to search";
         button.addEventListener('click', function () {
-            window.location.replace('/search/');
+            window.location.replace('/{{root_path}}search/');
         });
         $('#go_back').append(button);
 
@@ -140,13 +140,8 @@
             }
 
             // buttons
-            div_col = document.createElement('div');
-            div_col.className = 'col-md-auto';
-            let btn_group = document.createElement('div');
-            btn_group.className = 'btn-group';
-            div_col.append(btn_group);
-
             let data = document.createElement("td");
+            data.style = 'text-align:center';
             let link = document.createElement('a');
             link.href = `/{{root_path}}annotate/${result['treebank_title']}/${result['order']}`;
             let button = document.createElement("button");
@@ -158,8 +153,11 @@
             button.className = "btn btn-light btn-sm border";
             link.append(img);
             button.append(link);
-            btn_group.append(button);
+            data.append(button);
+            row.append(data);
 
+            data = document.createElement("td");
+            data.style = 'text-align:center';
             button = document.createElement("button");
             img = $('#eye')[0].cloneNode(true);
             img.hidden = false;
@@ -250,8 +248,7 @@
                     });
                 }
             });
-            btn_group.append(button);
-            data.append(btn_group);
+            data.append(button);
             row.append(data);
             $('#result-body')[0].append(row);
         }
@@ -348,6 +345,7 @@
         <div id="queries">
 
         </div>
+        <br>
         <input hidden="true" type="text" id="title" name="title" maxlength="50" required id="id_title">
         <button class="btn btn-xs btn-light border-secondary" type="submit">Search</button>
         {% else %}
@@ -374,7 +372,8 @@
                 <tr style="text-align: center;">
                     <th>sent_id</th>
                     <th>text</th>
-                    <th></th>
+                    <th>Annotate</th>
+                    <th>See annotations</th>
                 </tr>
             </thead>
             <tbody id="result-body"></tbody>

@@ -100,4 +100,26 @@
 <img hidden id="arrow-clockwise" src="{% static 'arrow-clockwise.svg' %}">
 <img hidden id="arrow-counterclockwise" src="{% static 'arrow-counterclockwise.svg' %}">
 <img hidden id="x" src="{% static 'x.svg' %}">
+<img hidden id="info" src="{% static 'info.svg' %}">
+
+<!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-l">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Usage Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5>Keyboard Shortcuts:</h5>
+                <p>Shift + arrows: moving through annotation cells</p>
+                <p>Shift + option + down arrow: lemma split</p>
+                <p>Shift + option + up arrow: row removal</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

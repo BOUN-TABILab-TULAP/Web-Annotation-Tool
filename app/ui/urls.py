@@ -10,6 +10,7 @@ urlpatterns = [
     path('accounts/profile/', views.profile, name='profile'),
     path('accounts/logout/', views.logout, name='logout'),
     path('upload_file/', views.upload_file, name='upload_file'),
+    path('add_sentence/', views.add_sentence, name='add_sentence'),
     path('test/', views.test, name='test'),
     path('create_treebank/', views.create_treebank, name='create_treebank'),
     path('view_treebanks/', views.view_treebanks, name='view_treebanks'),
@@ -24,4 +25,6 @@ urlpatterns = [
     path('ud_graph/', views.ud_graph, name='ud_graph'),
     path('download_conllu/', views.download_conllu, name='download_conllu'),
     path('compute_agreement/', views.compute_agreement, name='compute_agreement'),
+    path('delete_treebank/', views.delete_treebank, name='delete_treebank'),
+    path('parse_save_file/', views.parse_save_file, name='parse_save_file'),
 ]

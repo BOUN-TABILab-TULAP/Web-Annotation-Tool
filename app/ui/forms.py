@@ -1,10 +1,11 @@
 from django import forms
 from django.forms import ModelForm
-from .models import Treebank, Sentence, Annotation
+from .models import Treebank, Sentence, Annotation, TreebankFile
 
-class UploadFileForm(forms.Form):
-    title = forms.CharField(max_length=50)
-    file = forms.FileField()
+class UploadFileForm(ModelForm):
+    class Meta:
+        model = TreebankFile
+        fields = ['file']
 
 class TreebankForm(ModelForm):
     class Meta:

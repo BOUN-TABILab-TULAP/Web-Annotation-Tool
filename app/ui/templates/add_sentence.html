@@ -1,17 +1,17 @@
 {% extends 'base-nav.html' %}
 
 {% block head %}
-<title> Upload File Page </title>
+<title> Add Sentence Page </title>
 {% endblock %}
 
 {% block body %}
 <div id="space" class="p-5 border bg-light">
-    <h1>Upload a File</h1>
-    <form method="post" action="{% url 'upload_file' %}" enctype="multipart/form-data">{% csrf_token %}
+    <h1>Add a sentence</h1>
+    <form method="post" action="{% url 'add_sentence' %}" enctype="multipart/form-data">{% csrf_token %}
         {% if treebanks|length == 0 %}
         <span>No treebank created yet. <a href={% url 'create_treebank' %}>Create here.</a></span>
         {% else %}
-        Choose a treebank to upload to:
+        Choose a treebank to add to:
         <select class="w-50 form-select" id="treebank_select">
             {% for treebank in treebanks %}
             <option value="{{treebank}}"> {{treebank}} </option>
@@ -19,22 +19,14 @@
         </select>
         <input hidden="true" type="text" id="title" name="title" maxlength="50" required
             placeholder="Treebank Name"><br><br>
-        <input class="w-50 form-control" type="file" name="file" required id="id_file"><br><br>
-        <button type="submit" class="btn btn-xs btn-light border-secondary" id="uploadButton"> Upload </button><br><br>
+        <input class="w-50 form-control" type="text" name="sentence" required id="id_sentence"
+            placeholder="Sentence"><br><br>
+        <br><br>
+        <button type="submit" class="btn btn-xs btn-light border-secondary" id="addSentenceButton"> Add </button><br><br>
         {{message}}
         {% endif %}
     </form>
 </div>
-{% if path %}
-<script>
-    $.post("/{{root_path}}parse_save_file/",
-        {
-            file_path: "{{path}}",
-            title: '{{treebank_title}}'
-        }
-    );
-</script>
-{% endif %}
 
 <script>
     let title_input = document.getElementById('title');

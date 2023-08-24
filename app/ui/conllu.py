@@ -16,11 +16,11 @@ def validate_uploaded_file(f):
     else: return False
 
 def parse_file(f):
-    file_text = None
-    for chunk in f.chunks():
-        if file_text == None: file_text = chunk
-        else: file_text += chunk
-    file_text = file_text.decode('utf-8')
+    file_text = f.read()
+    # for chunk in f.chunks():
+    #     if file_text == None: file_text = chunk
+    #     else: file_text += chunk
+    # file_text = file_text.decode('utf-8')
     sentence_pattern = r'(?:#.+=.+\n)+(?:(?:.+\t){9}.+\n)+'
     sentences_found = re.findall(sentence_pattern, file_text)
     sentences = []
@@ -53,8 +53,8 @@ def parse_file(f):
     return sentences
 
 def get_errors(sent_id, text, content):
-    input = f'# sent_id = {sent_id}\n'
-    input += f'# text = {text}\n'
+    input_str = f'# sent_id = {sent_id}\n'
+    input_str += f'# text = {text}\n'
     order = ['form', 'lemma', 'upos', 'xpos', 'feats', 'head', 'deprel', 'deps'] # id & misc removed
     con_keys = list(content.keys())
     keys = []
@@ -64,9 +64,19 @@ def get_errors(sent_id, text, content):
         if f'{key}' in con_keys:
             keys.append(f'{key}')
     for key in keys:
-        input += f'{key}\t' # id
+        input_str += f'{key}\t' # id
         for i in range(8):
-            input += f'{content[key][order[i]]}\t'
-        input += f'{content[key]["misc"]}\n' # misc
-    input += '\n'
-    return subprocess.run([sys.executable, os.path.join(THISDIR, 'validate.py'), '--lang', 'tr'], input=input, encoding='utf-8', capture_output=True).stderr
+            input_str += f'{content[key][order[i]]}\t'
+        input_str += f'{content[key]["misc"]}\n' # misc
+    input_str += '\n'
+    val_str = subprocess.run([sys.executable, os.path.join(THISDIR, 'validate.py'), '--lang', 'tr'], input=input_str, encoding='utf-8', capture_output=True).stderr
+    new_val_str = str()
+    error_pattern = '\[Line (\d+) Sent .+\]: \[L\d .+\] (.*)$'
+    for line in val_str.split('\n'):
+        error_search = re.search(error_pattern, line)
+        if error_search:
+            node_t, error_t = error_search.group(1), error_search.group(2)
+            new_val_str += 'ID {n}: {err}\n'.format(n=keys[int(node_t)-2-1], err=error_t)
+        else:
+            break
+    return new_val_str
