@@ -2,7 +2,7 @@
 
 A Collaborative Web Tool for Linguistic Annotation
 
-The web-based Bogazici Annotation Tool (BoAT) supports grammar annotation especially suitable for morphologically rich languages (MRLs). It is useful for creating treebanks and conforms to Universal Dependencies (UD) framework.
+The web-based Boğaziçi University Annotation Tool (BoAT) supports grammar annotation especially suitable for morphologically rich languages (MRLs). It is useful for creating treebanks and conforms to Universal Dependencies (UD) framework.
 
 A user can upload and annotate a treebank by providing values for UD CoNLL-U tags (ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC). Furthermore, lemmas can be split and tagged, which is useful for MRLs like Turkish.
 
