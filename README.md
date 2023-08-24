@@ -11,14 +11,13 @@ This tool also provides support for sharing experiences among annotators with a 
 This tool easily can be built with the following instructions:
 
 Prerequisite:  
-Make sure that docker is installed and running on your system.
-See https://docs.docker.com/get-docker/ for installation instructions for your system.
+Make sure that Docker is installed and running on your system.
+See [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) for installation instructions for your system.
 
 1. Obtain the code using one of the following methods:
-- Download from the URL https://github.com/boun-tabilab-dip/Web-Annotation-Tool/archive/refs/heads/main.zip and unzip
-- Use Git: `git clone https://github.com/boun-tabilab-dip/Web-Annotation-Tool.git`
+    - Download from the URL `https://github.com/BOUN-TABILab-TULAP/Web-Annotation-Tool/archive/refs/heads/main.zip` and unzip
+    - Use Git by `git clone https://github.com/BOUN-TABILab-TULAP/Web-Annotation-Tool.git`
 2. Go to the newly created directory (if using zip the directory should be 'Web-Annotation-Tool-main'. If using Git, the directory should be 'Web-Annotation-Tool').
-3. Build the tool with the command `docker-compose up -d --build`
-4. Open http://localhost:8000 on your browser to start the web annotation tool.
+3. Build the tool with the command `docker compose up --build -d`
+4. Open [localhost:8000](http://localhost:8000) on your browser to start the web annotation tool.
 
-Please see https://github.com/boun-tabilab-dip/Web-Annotation-Tool for further information.
